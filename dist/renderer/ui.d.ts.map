@@ -1,0 +1,1 @@
+{"version":3,"file":"ui.d.ts","sourceRoot":"","sources":["../../src/renderer/ui.ts"],"names":[],"mappings":"AAEA;;;GAGG;AAEH,MAAM,WAAW,OAAO;IACtB,iBAAiB,EAAE,MAAM,GAAG,IAAI,CAAC;IACjC,kBAAkB,EAAE,MAAM,GAAG,IAAI,CAAC;CACnC;AAOD;;GAEG;AACH,wBAAgB,YAAY,CAAC,SAAS,EAAE,WAAW,GAAG,IAAI,CA8BzD"}

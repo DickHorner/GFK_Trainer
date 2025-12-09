@@ -1,0 +1,21 @@
+{
+  "name": "gfk_trainer",
+  "version": "1.0.0",
+  "description": "GFK trainieren mit dem Buch",
+  "main": "dist/main/main.js",
+  "scripts": {
+    "dev": "tsc && electron .", "build": "tsc", "watch": "tsc --watch", "start": "electron ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DickHorner/GFK_Trainer.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/DickHorner/GFK_Trainer/issues"
+  },
+  "homepage": "https://github.com/DickHorner/GFK_Trainer#readme"
+}
