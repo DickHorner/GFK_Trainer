@@ -4,8 +4,8 @@
  * Designed for services like LM Studio, Ollama, etc.
  */
 
-import { ExerciseType, Exercise } from '../gfkContent';
-import { LlmEvaluationResult, parseAndRepairJsonResponse } from './schema';
+import { ExerciseType, Exercise } from '../gfkContent.js';
+import { LlmEvaluationResult, parseAndRepairJsonResponse } from './schema.js';
 
 /**
  * LLM Client Configuration
