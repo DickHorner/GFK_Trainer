@@ -4,7 +4,10 @@
   "description": "GFK trainieren mit dem Buch",
   "main": "dist/main/main.js",
   "scripts": {
-    "dev": "tsc && electron .", "build": "tsc", "watch": "tsc --watch", "start": "electron ."
+    "dev": "tsc && electron .",
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "start": "electron ."
   },
   "repository": {
     "type": "git",
@@ -17,5 +20,9 @@
   "bugs": {
     "url": "https://github.com/DickHorner/GFK_Trainer/issues"
   },
-  "homepage": "https://github.com/DickHorner/GFK_Trainer#readme"
+  "homepage": "https://github.com/DickHorner/GFK_Trainer#readme",
+  "devDependencies": {
+    "@electron/notarize": "^3.1.1",
+    "electron-builder": "^26.0.12"
+  }
 }
