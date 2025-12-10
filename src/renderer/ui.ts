@@ -114,11 +114,7 @@ function renderChapterList(container: HTMLElement, mainContent: HTMLElement): vo
     
     button.addEventListener('click', () => {
       selectChapter(chapter.id, mainContent);
-    });
-      if (mainContent) {
-        selectChapter(chapter.id, mainContent);
-        renderChapterList(container); // Re-render to update highlight
-      }
+      renderChapterList(container, mainContent); // Re-render to update highlight
     });
     
     listItem.appendChild(button);
@@ -356,7 +352,7 @@ function renderTextareaField(exerciseId: string, container: HTMLElement, exercis
   
   // Restore saved value if exists
   if (exercise) {
-    const answer = stateModule.getAnswer(userProgress, exercise.id, 'main');
+    const answer = stateModule.getAnswer(userProgress, uiState.selectedChapterId!, exercise.id, 'main');
     if (answer && answer.type === 'textarea') {
       textarea.value = answer.content;
     }
@@ -367,7 +363,7 @@ function renderTextareaField(exerciseId: string, container: HTMLElement, exercis
         type: 'textarea',
         content: textarea.value
       };
-      stateModule.setAnswer(userProgress, exercise.id, 'main', textAnswer);
+      stateModule.setAnswer(userProgress, uiState.selectedChapterId!, exercise.id, 'main', textAnswer);
       stateModule.saveState(userProgress);
     });
     
@@ -400,7 +396,7 @@ function renderMatrixField(exercise: any, container: HTMLElement): void {
   table.style.marginBottom = '10px';
   
   // Get saved matrix data if exists
-  const savedAnswer = stateModule.getAnswer(userProgress, exercise.id, 'main');
+  const savedAnswer = stateModule.getAnswer(userProgress, uiState.selectedChapterId!, exercise.id, 'main');
   const savedData = savedAnswer && savedAnswer.type === 'matrix' ? savedAnswer.data : null;
   
   const inputs: HTMLInputElement[][] = [];
@@ -460,7 +456,7 @@ function renderMatrixField(exercise: any, container: HTMLElement): void {
           type: 'matrix',
           data: matrixData
         };
-        stateModule.setAnswer(userProgress, exercise.id, 'main', matrixAnswer);
+        stateModule.setAnswer(userProgress, uiState.selectedChapterId!, exercise.id, 'main', matrixAnswer);
         stateModule.saveState(userProgress);
       });
       
@@ -499,7 +495,7 @@ function renderMatrixField(exercise: any, container: HTMLElement): void {
 
 function renderTranslateField(exercise: any, container: HTMLElement): void {
   // Get saved translate data if exists
-  const savedAnswer = stateModule.getAnswer(userProgress, exercise.id, 'main');
+  const savedAnswer = stateModule.getAnswer(userProgress, uiState.selectedChapterId!, exercise.id, 'main');
   const savedPairs = savedAnswer && savedAnswer.type === 'translate' ? savedAnswer.pairs : null;
   
   const inputPairs: Array<{from: HTMLInputElement; to: HTMLInputElement}> = [];
@@ -555,7 +551,7 @@ function renderTranslateField(exercise: any, container: HTMLElement): void {
         type: 'translate',
         pairs
       };
-      stateModule.setAnswer(userProgress, exercise.id, 'main', translateAnswer);
+      stateModule.setAnswer(userProgress, uiState.selectedChapterId!, exercise.id, 'main', translateAnswer);
       stateModule.saveState(userProgress);
     };
     
@@ -596,7 +592,7 @@ function renderTranslateField(exercise: any, container: HTMLElement): void {
 
 function renderChecklistField(exercise: any, container: HTMLElement): void {
   // Get saved checklist data if exists
-  const savedAnswer = stateModule.getAnswer(userProgress, exercise.id, 'main');
+  const savedAnswer = stateModule.getAnswer(userProgress, uiState.selectedChapterId!, exercise.id, 'main');
   const savedChecked = savedAnswer && savedAnswer.type === 'checklist' ? savedAnswer.checked : null;
   
   const checkboxes: HTMLInputElement[] = [];
@@ -638,7 +634,7 @@ function renderChecklistField(exercise: any, container: HTMLElement): void {
         type: 'checklist',
         checked
       };
-      stateModule.setAnswer(userProgress, exercise.id, 'main', checklistAnswer);
+      stateModule.setAnswer(userProgress, uiState.selectedChapterId!, exercise.id, 'main', checklistAnswer);
       stateModule.saveState(userProgress);
     });
     
@@ -686,7 +682,7 @@ function renderRatingField(exerciseId: string, container: HTMLElement, exercise?
   
   // Restore saved rating
   if (exercise) {
-    const answer = stateModule.getAnswer(userProgress, exercise.id, 'main');
+    const answer = stateModule.getAnswer(userProgress, uiState.selectedChapterId!, exercise.id, 'main');
     if (answer && answer.type === 'rating') {
       selectedRating = answer.score;
     }
@@ -720,7 +716,7 @@ function renderRatingField(exerciseId: string, container: HTMLElement, exercise?
           score: i,
           comment: (comment.value || '').trim()
         };
-        stateModule.setAnswer(userProgress, exercise.id, 'main', ratingAnswer);
+        stateModule.setAnswer(userProgress, uiState.selectedChapterId!, exercise.id, 'main', ratingAnswer);
         stateModule.saveState(userProgress);
       }
     });
@@ -745,7 +741,7 @@ function renderRatingField(exerciseId: string, container: HTMLElement, exercise?
   
   // Restore comment
   if (exercise) {
-    const answer = stateModule.getAnswer(userProgress, exercise.id, 'main');
+    const answer = stateModule.getAnswer(userProgress, uiState.selectedChapterId!, exercise.id, 'main');
     if (answer && answer.type === 'rating') {
       comment.value = answer.comment;
     }
@@ -756,7 +752,7 @@ function renderRatingField(exerciseId: string, container: HTMLElement, exercise?
         score: selectedRating,
         comment: comment.value
       };
-      stateModule.setAnswer(userProgress, exercise.id, 'main', ratingAnswer);
+      stateModule.setAnswer(userProgress, uiState.selectedChapterId!, exercise.id, 'main', ratingAnswer);
       stateModule.saveState(userProgress);
     });
   }
@@ -998,7 +994,7 @@ function showLLMFeedback(exercise: Exercise, fieldId: string, fieldContent: stri
       }
       
       // Save feedback to state
-      stateModule.setLLMFeedback(userProgress, exercise.id, fieldId, feedback);
+      stateModule.setLLMFeedback(userProgress, uiState.selectedChapterId!, exercise.id, fieldId, feedback);
       stateModule.saveState(userProgress);
     })
     .catch((error: Error) => {
@@ -1081,3 +1077,4 @@ function showLLMFeedback(exercise: Exercise, fieldId: string, fieldContent: stri
     }
   });
 }
+
