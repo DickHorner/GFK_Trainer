@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+const { contextBridge, ipcRenderer } = require('electron');
 
 // Secure bridge for IPC communication
 // Future: add LLM communication, state persistence, etc.
