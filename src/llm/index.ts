@@ -1,4 +1,4 @@
 // Re-export LLM client and schema
-export * from './client';
-export * from './schema';
-export { evaluateField } from './client';
+export * from './client.js';
+export * from './schema.js';
+export { evaluateField } from './client.js';

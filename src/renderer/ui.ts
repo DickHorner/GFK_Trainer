@@ -1,6 +1,6 @@
-import { GFK_CHAPTERS, Chapter, Exercise, ExerciseType } from '../gfkContent';
-import * as stateModule from '../state/state';
-import * as llmModule from '../llm/client';
+import { GFK_CHAPTERS, Chapter, Exercise, ExerciseType } from '../gfkContent.js';
+import * as stateModule from '../state/state.js';
+import * as llmModule from '../llm/client.js';
 
 /**
  * UI Rendering Module for GFK-Trainer
