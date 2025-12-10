@@ -1,6 +1,6 @@
 import { GFK_CHAPTERS, Chapter, Exercise, ExerciseType } from '../gfkContent.js';
 import * as stateModule from '../state/state.js';
-import * as llmModule from '../llm/client.js';
+import * as llmClient from '../llm/client.js';
 import * as settingsModule from '../settings/settings.js';
 
 /**
@@ -101,6 +101,7 @@ function renderSidebarHeader(sidebar: HTMLElement, mainContent: HTMLElement): vo
   const settingsBtn = document.createElement('button');
   settingsBtn.innerHTML = '⚙️';
   settingsBtn.title = 'Einstellungen';
+  settingsBtn.setAttribute('aria-label', 'Einstellungen öffnen');
   settingsBtn.style.border = 'none';
   settingsBtn.style.background = '#333';
   settingsBtn.style.color = '#e0e0e0';
@@ -120,6 +121,13 @@ function renderSidebarHeader(sidebar: HTMLElement, mainContent: HTMLElement): vo
   
   settingsBtn.addEventListener('click', () => {
     openSettingsModal();
+  });
+  
+  settingsBtn.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      openSettingsModal();
+    }
   });
   
   header.appendChild(title);
@@ -158,6 +166,9 @@ function renderChapterList(container: HTMLElement, mainContent: HTMLElement): vo
     const button = document.createElement('button');
     
     button.textContent = chapter.title;
+    button.setAttribute('aria-label', `Kapitel ${chapter.id}: ${chapter.title}`);
+    button.setAttribute('aria-pressed', String(uiState.selectedChapterId === chapter.id));
+    button.setAttribute('role', 'button');
     button.style.width = '100%';
     button.style.padding = '10px';
     button.style.marginBottom = '5px';
@@ -928,7 +939,7 @@ function showLLMFeedback(exercise: Exercise, fieldId: string, fieldContent: stri
   document.body.appendChild(modal);
   
   // Call LLM asynchronously with enhanced error handling
-  llmModule.evaluateField(exercise, fieldId, fieldContent, exercise.type)
+  llmClient.evaluateField(exercise, fieldId, fieldContent, exercise.type)
     .then((feedback) => {
       if (!feedback) {
         throw new Error('LLM ist deaktiviert. Bitte konfiguriere einen LLM-Endpoint in den Einstellungen.');
