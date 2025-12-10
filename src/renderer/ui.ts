@@ -1,6 +1,7 @@
 import { GFK_CHAPTERS, Chapter, Exercise, ExerciseType } from '../gfkContent.js';
 import * as stateModule from '../state/state.js';
 import * as llmModule from '../llm/client.js';
+import * as settingsModule from '../settings/settings.js';
 
 /**
  * UI Rendering Module for GFK-Trainer
@@ -25,6 +26,7 @@ let uiState: UIState = {
 };
 
 let userProgress: stateModule.UserProgress;
+let appSettings: settingsModule.AppSettings;
 let fieldElements: Map<string, FieldElement> = new Map();
 
 /**
@@ -33,8 +35,22 @@ let fieldElements: Map<string, FieldElement> = new Map();
 export function initializeUI(container: HTMLElement): void {
   container.innerHTML = '';
   
-  // Load user progress from state
+  // Load user progress and settings
   userProgress = stateModule.loadState();
+  appSettings = settingsModule.loadSettings();
+  
+  // Apply theme
+  settingsModule.applyTheme(appSettings.theme);
+  
+  // Configure LLM client
+  if (appSettings.llm.enabled) {
+    llmClient.setLLMConfig({
+      endpoint: appSettings.llm.endpoint,
+      model: appSettings.llm.model,
+      timeout: appSettings.llm.timeout,
+      enabled: appSettings.llm.enabled
+    });
+  }
   
   // Create layout: sidebar + main content
   const layout = document.createElement('div');
@@ -47,6 +63,7 @@ export function initializeUI(container: HTMLElement): void {
   sidebar.style.overflowY = 'auto';
   sidebar.style.borderRight = '1px solid #444';
   sidebar.style.padding = '10px';
+  sidebar.style.position = 'relative';
   
   const mainContent = document.createElement('main');
   mainContent.style.overflowY = 'auto';
@@ -56,8 +73,8 @@ export function initializeUI(container: HTMLElement): void {
   layout.appendChild(mainContent);
   container.appendChild(layout);
   
-  // Render chapters in sidebar
-  renderChapterList(sidebar, mainContent);
+  // Add settings button to sidebar header
+  renderSidebarHeader(sidebar, mainContent);
   
   // Select first chapter by default
   if (GFK_CHAPTERS.length > 0) {
@@ -66,16 +83,69 @@ export function initializeUI(container: HTMLElement): void {
 }
 
 /**
+ * Render sidebar header with settings button
+ */
+function renderSidebarHeader(sidebar: HTMLElement, mainContent: HTMLElement): void {
+  const header = document.createElement('div');
+  header.style.display = 'flex';
+  header.style.justifyContent = 'space-between';
+  header.style.alignItems = 'center';
+  header.style.marginBottom = '20px';
+  
+  const title = document.createElement('h2');
+  title.textContent = 'GFK-Trainer';
+  title.style.fontSize = '1.3rem';
+  title.style.color = '#64b5f6';
+  title.style.margin = '0';
+  
+  const settingsBtn = document.createElement('button');
+  settingsBtn.innerHTML = '⚙️';
+  settingsBtn.title = 'Einstellungen';
+  settingsBtn.style.border = 'none';
+  settingsBtn.style.background = '#333';
+  settingsBtn.style.color = '#e0e0e0';
+  settingsBtn.style.fontSize = '1.2rem';
+  settingsBtn.style.padding = '8px 12px';
+  settingsBtn.style.borderRadius = '4px';
+  settingsBtn.style.cursor = 'pointer';
+  settingsBtn.style.transition = 'background 0.2s ease';
+  
+  settingsBtn.addEventListener('mouseenter', () => {
+    settingsBtn.style.background = '#444';
+  });
+  
+  settingsBtn.addEventListener('mouseleave', () => {
+    settingsBtn.style.background = '#333';
+  });
+  
+  settingsBtn.addEventListener('click', () => {
+    openSettingsModal();
+  });
+  
+  header.appendChild(title);
+  header.appendChild(settingsBtn);
+  sidebar.appendChild(header);
+  
+  // Render chapters
+  renderChapterList(sidebar, mainContent);
+}
+
+/**
  * Render the chapter list in the sidebar
  */
 function renderChapterList(container: HTMLElement, mainContent: HTMLElement): void {
-  container.innerHTML = '';
+  // Remove existing chapter list if present
+  const existingList = container.querySelector('ul');
+  if (existingList) {
+    existingList.remove();
+  }
   
-  const heading = document.createElement('h2');
+  const heading = document.createElement('h3');
   heading.textContent = 'Kapitel';
-  heading.style.fontSize = '1.2rem';
+  heading.style.fontSize = '1rem';
   heading.style.marginBottom = '15px';
-  heading.style.color = '#64b5f6';
+  heading.style.color = '#aaa';
+  heading.style.marginTop = '0';
   container.appendChild(heading);
   
   const list = document.createElement('ul');
@@ -1076,5 +1146,465 @@ function showLLMFeedback(exercise: Exercise, fieldId: string, fieldContent: stri
       document.body.removeChild(modal);
     }
   });
+}
+
+/**
+ * Open settings modal with tabs for LLM config, language, and theme
+ */
+function openSettingsModal(): void {
+  // Create modal overlay
+  const modal = document.createElement('div');
+  modal.style.position = 'fixed';
+  modal.style.top = '0';
+  modal.style.left = '0';
+  modal.style.width = '100%';
+  modal.style.height = '100%';
+  modal.style.background = 'rgba(0, 0, 0, 0.8)';
+  modal.style.display = 'flex';
+  modal.style.alignItems = 'center';
+  modal.style.justifyContent = 'center';
+  modal.style.zIndex = '1000';
+  
+  // Create dialog box
+  const dialogBox = document.createElement('div');
+  dialogBox.style.background = '#2a2a2a';
+  dialogBox.style.borderRadius = '8px';
+  dialogBox.style.padding = '30px';
+  dialogBox.style.maxWidth = '600px';
+  dialogBox.style.width = '90%';
+  dialogBox.style.maxHeight = '80vh';
+  dialogBox.style.overflowY = 'auto';
+  dialogBox.style.boxShadow = '0 4px 20px rgba(0, 0, 0, 0.5)';
+  
+  modal.appendChild(dialogBox);
+  document.body.appendChild(modal);
+  
+  // Header
+  const header = document.createElement('h2');
+  header.textContent = '⚙️ Einstellungen';
+  header.style.margin = '0 0 20px 0';
+  header.style.color = '#64b5f6';
+  dialogBox.appendChild(header);
+  
+  // Create tabs
+  const tabsContainer = document.createElement('div');
+  tabsContainer.style.display = 'flex';
+  tabsContainer.style.gap = '10px';
+  tabsContainer.style.marginBottom = '20px';
+  tabsContainer.style.borderBottom = '1px solid #444';
+  
+  interface TabConfig {
+    id: string;
+    label: string;
+    content: () => HTMLElement;
+  }
+  
+  const tabs: TabConfig[] = [
+    { id: 'llm', label: 'LLM-Konfiguration', content: createLLMTab },
+    { id: 'theme', label: 'Theme', content: createThemeTab },
+    { id: 'language', label: 'Sprache', content: createLanguageTab }
+  ];
+  
+  let activeTabId = 'llm';
+  const contentContainer = document.createElement('div');
+  contentContainer.style.marginTop = '20px';
+  
+  function switchTab(tabId: string): void {
+    activeTabId = tabId;
+    
+    // Update tab buttons
+    tabButtons.forEach(btn => {
+      if (btn.dataset.tabId === tabId) {
+        btn.style.background = '#64b5f6';
+        btn.style.color = '#1e1e1e';
+      } else {
+        btn.style.background = '#333';
+        btn.style.color = '#e0e0e0';
+      }
+    });
+    
+    // Render content
+    const tab = tabs.find(t => t.id === tabId);
+    if (tab) {
+      contentContainer.innerHTML = '';
+      contentContainer.appendChild(tab.content());
+    }
+  }
+  
+  // Create tab buttons
+  const tabButtons: HTMLButtonElement[] = [];
+  tabs.forEach(tab => {
+    const btn = document.createElement('button');
+    btn.textContent = tab.label;
+    btn.dataset.tabId = tab.id;
+    btn.style.padding = '10px 20px';
+    btn.style.border = 'none';
+    btn.style.borderRadius = '4px 4px 0 0';
+    btn.style.background = tab.id === activeTabId ? '#64b5f6' : '#333';
+    btn.style.color = tab.id === activeTabId ? '#1e1e1e' : '#e0e0e0';
+    btn.style.cursor = 'pointer';
+    btn.style.fontSize = '0.9rem';
+    btn.style.transition = 'all 0.2s ease';
+    
+    btn.addEventListener('click', () => switchTab(tab.id));
+    tabsContainer.appendChild(btn);
+    tabButtons.push(btn);
+  });
+  
+  dialogBox.appendChild(tabsContainer);
+  dialogBox.appendChild(contentContainer);
+  
+  // Initial content
+  switchTab(activeTabId);
+  
+  // Action buttons
+  const actionsDiv = document.createElement('div');
+  actionsDiv.style.display = 'flex';
+  actionsDiv.style.gap = '10px';
+  actionsDiv.style.marginTop = '30px';
+  actionsDiv.style.justifyContent = 'flex-end';
+  
+  const saveBtn = document.createElement('button');
+  saveBtn.textContent = 'Speichern';
+  saveBtn.style.padding = '10px 20px';
+  saveBtn.style.background = '#4caf50';
+  saveBtn.style.color = '#fff';
+  saveBtn.style.border = 'none';
+  saveBtn.style.borderRadius = '4px';
+  saveBtn.style.cursor = 'pointer';
+  saveBtn.style.fontSize = '0.95rem';
+  saveBtn.addEventListener('click', () => {
+    saveSettings();
+    document.body.removeChild(modal);
+  });
+  
+  const cancelBtn = document.createElement('button');
+  cancelBtn.textContent = 'Abbrechen';
+  cancelBtn.style.padding = '10px 20px';
+  cancelBtn.style.background = '#444';
+  cancelBtn.style.color = '#e0e0e0';
+  cancelBtn.style.border = 'none';
+  cancelBtn.style.borderRadius = '4px';
+  cancelBtn.style.cursor = 'pointer';
+  cancelBtn.style.fontSize = '0.95rem';
+  cancelBtn.addEventListener('click', () => {
+    appSettings = settingsModule.loadSettings(); // Reset changes
+    document.body.removeChild(modal);
+  });
+  
+  actionsDiv.appendChild(cancelBtn);
+  actionsDiv.appendChild(saveBtn);
+  dialogBox.appendChild(actionsDiv);
+  
+  // Close on overlay click
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      appSettings = settingsModule.loadSettings();
+      document.body.removeChild(modal);
+    }
+  });
+  
+  // Close on Escape key
+  const escapeHandler = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      appSettings = settingsModule.loadSettings();
+      document.body.removeChild(modal);
+      document.removeEventListener('keydown', escapeHandler);
+    }
+  };
+  document.addEventListener('keydown', escapeHandler);
+}
+
+/**
+ * Create LLM configuration tab content
+ */
+function createLLMTab(): HTMLElement {
+  const container = document.createElement('div');
+  
+  // Enable/Disable toggle
+  const enableDiv = document.createElement('div');
+  enableDiv.style.marginBottom = '20px';
+  
+  const enableLabel = document.createElement('label');
+  enableLabel.style.display = 'flex';
+  enableLabel.style.alignItems = 'center';
+  enableLabel.style.gap = '10px';
+  enableLabel.style.cursor = 'pointer';
+  
+  const enableCheckbox = document.createElement('input');
+  enableCheckbox.type = 'checkbox';
+  enableCheckbox.checked = appSettings.llm.enabled;
+  enableCheckbox.style.width = '20px';
+  enableCheckbox.style.height = '20px';
+  enableCheckbox.style.cursor = 'pointer';
+  enableCheckbox.addEventListener('change', () => {
+    appSettings.llm.enabled = enableCheckbox.checked;
+    endpointInput.disabled = !enableCheckbox.checked;
+    modelInput.disabled = !enableCheckbox.checked;
+    timeoutInput.disabled = !enableCheckbox.checked;
+  });
+  
+  const enableText = document.createElement('span');
+  enableText.textContent = 'LLM aktivieren (für Deep-Check)';
+  enableText.style.color = '#e0e0e0';
+  enableText.style.fontSize = '1rem';
+  
+  enableLabel.appendChild(enableCheckbox);
+  enableLabel.appendChild(enableText);
+  enableDiv.appendChild(enableLabel);
+  container.appendChild(enableDiv);
+  
+  // Endpoint input
+  const endpointDiv = document.createElement('div');
+  endpointDiv.style.marginBottom = '20px';
+  
+  const endpointLabel = document.createElement('label');
+  endpointLabel.textContent = 'API Endpoint';
+  endpointLabel.style.display = 'block';
+  endpointLabel.style.marginBottom = '5px';
+  endpointLabel.style.color = '#aaa';
+  endpointLabel.style.fontSize = '0.9rem';
+  
+  const endpointInput = document.createElement('input');
+  endpointInput.type = 'text';
+  endpointInput.value = appSettings.llm.endpoint;
+  endpointInput.disabled = !appSettings.llm.enabled;
+  endpointInput.placeholder = 'http://localhost:1234/v1/chat/completions';
+  endpointInput.style.width = '100%';
+  endpointInput.style.padding = '10px';
+  endpointInput.style.background = '#1e1e1e';
+  endpointInput.style.color = '#e0e0e0';
+  endpointInput.style.border = '1px solid #444';
+  endpointInput.style.borderRadius = '4px';
+  endpointInput.style.fontSize = '0.9rem';
+  endpointInput.addEventListener('input', () => {
+    appSettings.llm.endpoint = endpointInput.value;
+  });
+  
+  const endpointHint = document.createElement('small');
+  endpointHint.textContent = 'Standard: LM Studio (http://localhost:1234) oder Ollama (http://localhost:11434)';
+  endpointHint.style.display = 'block';
+  endpointHint.style.marginTop = '5px';
+  endpointHint.style.color = '#888';
+  endpointHint.style.fontSize = '0.8rem';
+  
+  endpointDiv.appendChild(endpointLabel);
+  endpointDiv.appendChild(endpointInput);
+  endpointDiv.appendChild(endpointHint);
+  container.appendChild(endpointDiv);
+  
+  // Model input
+  const modelDiv = document.createElement('div');
+  modelDiv.style.marginBottom = '20px';
+  
+  const modelLabel = document.createElement('label');
+  modelLabel.textContent = 'Modell';
+  modelLabel.style.display = 'block';
+  modelLabel.style.marginBottom = '5px';
+  modelLabel.style.color = '#aaa';
+  modelLabel.style.fontSize = '0.9rem';
+  
+  const modelInput = document.createElement('input');
+  modelInput.type = 'text';
+  modelInput.value = appSettings.llm.model;
+  modelInput.disabled = !appSettings.llm.enabled;
+  modelInput.placeholder = 'llama-3.1-8b-instruct';
+  modelInput.style.width = '100%';
+  modelInput.style.padding = '10px';
+  modelInput.style.background = '#1e1e1e';
+  modelInput.style.color = '#e0e0e0';
+  modelInput.style.border = '1px solid #444';
+  modelInput.style.borderRadius = '4px';
+  modelInput.style.fontSize = '0.9rem';
+  modelInput.addEventListener('input', () => {
+    appSettings.llm.model = modelInput.value;
+  });
+  
+  const modelHint = document.createElement('small');
+  modelHint.textContent = 'Beliebig leer lassen oder LM Studio Modell-ID eintragen';
+  modelHint.style.display = 'block';
+  modelHint.style.marginTop = '5px';
+  modelHint.style.color = '#888';
+  modelHint.style.fontSize = '0.8rem';
+  
+  modelDiv.appendChild(modelLabel);
+  modelDiv.appendChild(modelInput);
+  modelDiv.appendChild(modelHint);
+  container.appendChild(modelDiv);
+  
+  // Timeout slider
+  const timeoutDiv = document.createElement('div');
+  timeoutDiv.style.marginBottom = '20px';
+  
+  const timeoutLabel = document.createElement('label');
+  timeoutLabel.textContent = `Timeout: ${appSettings.llm.timeout / 1000}s`;
+  timeoutLabel.style.display = 'block';
+  timeoutLabel.style.marginBottom = '10px';
+  timeoutLabel.style.color = '#aaa';
+  timeoutLabel.style.fontSize = '0.9rem';
+  
+  const timeoutInput = document.createElement('input');
+  timeoutInput.type = 'range';
+  timeoutInput.min = '5000';
+  timeoutInput.max = '60000';
+  timeoutInput.step = '5000';
+  timeoutInput.value = String(appSettings.llm.timeout);
+  timeoutInput.disabled = !appSettings.llm.enabled;
+  timeoutInput.style.width = '100%';
+  timeoutInput.addEventListener('input', () => {
+    appSettings.llm.timeout = Number(timeoutInput.value);
+    timeoutLabel.textContent = `Timeout: ${appSettings.llm.timeout / 1000}s`;
+  });
+  
+  timeoutDiv.appendChild(timeoutLabel);
+  timeoutDiv.appendChild(timeoutInput);
+  container.appendChild(timeoutDiv);
+  
+  return container;
+}
+
+/**
+ * Create theme selection tab content
+ */
+function createThemeTab(): HTMLElement {
+  const container = document.createElement('div');
+  
+  const themeOptions: Array<{ value: 'dark' | 'light' | 'auto'; label: string }> = [
+    { value: 'dark', label: 'Dunkel' },
+    { value: 'light', label: 'Hell' },
+    { value: 'auto', label: 'Automatisch (System)' }
+  ];
+  
+  themeOptions.forEach(option => {
+    const optionDiv = document.createElement('div');
+    optionDiv.style.marginBottom = '15px';
+    
+    const label = document.createElement('label');
+    label.style.display = 'flex';
+    label.style.alignItems = 'center';
+    label.style.gap = '10px';
+    label.style.cursor = 'pointer';
+    label.style.padding = '15px';
+    label.style.background = appSettings.theme === option.value ? '#333' : '#1e1e1e';
+    label.style.borderRadius = '6px';
+    label.style.border = appSettings.theme === option.value ? '2px solid #64b5f6' : '1px solid #444';
+    label.style.transition = 'all 0.2s ease';
+    
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = 'theme';
+    radio.value = option.value;
+    radio.checked = appSettings.theme === option.value;
+    radio.style.width = '18px';
+    radio.style.height = '18px';
+    radio.style.cursor = 'pointer';
+    radio.addEventListener('change', () => {
+      if (radio.checked) {
+        appSettings.theme = option.value;
+        // Re-render to update selection
+        const parent = container.parentElement;
+        if (parent) {
+          parent.innerHTML = '';
+          parent.appendChild(createThemeTab());
+        }
+      }
+    });
+    
+    const text = document.createElement('span');
+    text.textContent = option.label;
+    text.style.color = '#e0e0e0';
+    text.style.fontSize = '1rem';
+    
+    label.appendChild(radio);
+    label.appendChild(text);
+    optionDiv.appendChild(label);
+    container.appendChild(optionDiv);
+  });
+  
+  return container;
+}
+
+/**
+ * Create language selection tab content
+ */
+function createLanguageTab(): HTMLElement {
+  const container = document.createElement('div');
+  
+  const languageOptions: Array<{ value: 'de' | 'en'; label: string }> = [
+    { value: 'de', label: 'Deutsch' },
+    { value: 'en', label: 'English' }
+  ];
+  
+  languageOptions.forEach(option => {
+    const optionDiv = document.createElement('div');
+    optionDiv.style.marginBottom = '15px';
+    
+    const label = document.createElement('label');
+    label.style.display = 'flex';
+    label.style.alignItems = 'center';
+    label.style.gap = '10px';
+    label.style.cursor = 'pointer';
+    label.style.padding = '15px';
+    label.style.background = appSettings.language === option.value ? '#333' : '#1e1e1e';
+    label.style.borderRadius = '6px';
+    label.style.border = appSettings.language === option.value ? '2px solid #64b5f6' : '1px solid #444';
+    label.style.transition = 'all 0.2s ease';
+    
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = 'language';
+    radio.value = option.value;
+    radio.checked = appSettings.language === option.value;
+    radio.style.width = '18px';
+    radio.style.height = '18px';
+    radio.style.cursor = 'pointer';
+    radio.addEventListener('change', () => {
+      if (radio.checked) {
+        appSettings.language = option.value;
+        // Re-render to update selection
+        const parent = container.parentElement;
+        if (parent) {
+          parent.innerHTML = '';
+          parent.appendChild(createLanguageTab());
+        }
+      }
+    });
+    
+    const text = document.createElement('span');
+    text.textContent = option.label;
+    text.style.color = '#e0e0e0';
+    text.style.fontSize = '1rem';
+    
+    label.appendChild(radio);
+    label.appendChild(text);
+    optionDiv.appendChild(label);
+    container.appendChild(optionDiv);
+  });
+  
+  const hint = document.createElement('p');
+  hint.textContent = 'Hinweis: Sprache wird beim nächsten Start übernommen (aktuell nur Platzhalter).';
+  hint.style.color = '#888';
+  hint.style.fontSize = '0.85rem';
+  hint.style.marginTop = '20px';
+  container.appendChild(hint);
+  
+  return container;
+}
+
+/**
+ * Save settings and apply changes
+ */
+function saveSettings(): void {
+  settingsModule.saveSettings(appSettings);
+  settingsModule.applyTheme(appSettings.theme);
+  
+  // Update LLM client configuration
+  if (appSettings.llm.enabled) {
+    llmClient.setLLMConfig({
+      endpoint: appSettings.llm.endpoint,
+      model: appSettings.llm.model,
+      timeout: appSettings.llm.timeout
+    });
+  }
 }
 

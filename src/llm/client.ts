@@ -22,7 +22,7 @@ export interface LLMConfig {
  */
 const DEFAULT_CONFIG: LLMConfig = {
   endpoint: 'http://localhost:1234/v1/chat/completions',
-  model: 'local-model',
+  model: 'llama-3.1-8b-instruct',
   timeout: 30000,  // 30 seconds
   enabled: false,
 };
