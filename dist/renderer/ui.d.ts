@@ -1,6 +1,6 @@
 /**
  * UI Rendering Module for GFK-Trainer
- * Handles display of chapters, exercises, and input fields
+ * Handles display of chapters, exercises, input fields, and LLM feedback
  */
 export interface UIState {
     selectedChapterId: string | null;
