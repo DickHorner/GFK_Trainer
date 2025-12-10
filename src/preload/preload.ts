@@ -10,7 +10,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   receive: (channel: string, func: (args: unknown) => void) => {
     if (['from-main'].includes(channel)) {
-      ipcRenderer.on(channel, (_event, args) => func(args));
+      ipcRenderer.on(channel, (_event: any, args: any) => func(args));
     }
   },
 });
+
