@@ -4,8 +4,6 @@ Eine **Electron-Anwendung zum Trainieren von Gewaltfreier Kommunikation (GFK)**,
 
 ## 🎯 Merkmale
 
-### ✅ Implementiert (Phasen 1–4)
-
 - **Offline-First** – Läuft vollständig lokal, keine Cloud-Abhängigkeit
 - **12 Kapitel mit 60+ Übungen** – Strukturierter Lernpfad für GFK
 - **6 Übungstypen** – Vielfältige Eingabeformate:
@@ -18,10 +16,7 @@ Eine **Electron-Anwendung zum Trainieren von Gewaltfreier Kommunikation (GFK)**,
 
 - **Fortschritt speichern** – Automatische localStorage-Persistierung
 - **Import/Export** – Fortschritt als JSON-Datei herunterladen/hochladen
-- **LLM-Integration vorbereitet** – Kompatibilität mit OpenAI-kompatiblen APIs (LM Studio, Ollama)
-
-### 🚀 Geplant (Phase 5+)
-
+- **LLM-Integration** – Kompatibilität mit OpenAI-kompatiblen APIs (LM Studio, Ollama)
 - LLM-Feedback pro Feld ("Deep-Check" Button)
 - Feedback-Modale mit Bewertungen und Verbesserungsvorschlägen
 - Robuste Fehlerbehandlung für LLM-Ausfälle
