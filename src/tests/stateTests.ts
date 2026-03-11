@@ -39,12 +39,12 @@ export function testSaveAndLoadState(): boolean {
   };
   
   // setAnswer returns void, modifies in-place
-  stateModule.setAnswer(state, 'ch1', 'c1e1', 'main', textAnswer);
+  stateModule.setAnswer(state, 'gfk-ch1', 'gfk-c1e1', 'main', textAnswer);
   stateModule.saveState(state);
   
   // Load and verify
   const loaded = stateModule.loadState();
-  const retrieved = stateModule.getAnswer(loaded, 'ch1', 'c1e1', 'main');
+  const retrieved = stateModule.getAnswer(loaded, 'gfk-ch1', 'gfk-c1e1', 'main');
   
   return (
     retrieved !== undefined &&
@@ -60,7 +60,7 @@ export function testSaveAndLoadFeedback(): boolean {
   const state = stateModule.loadState();
   
   const mockFeedback = {
-    exerciseId: 'c1e1',
+    exerciseId: 'gfk-c1e1',
     fieldId: 'main',
     present: true,
     score: 2 as const,
@@ -72,11 +72,11 @@ export function testSaveAndLoadFeedback(): boolean {
   };
   
   // setLLMFeedback returns void, modifies in-place
-  stateModule.setLLMFeedback(state, 'ch1', 'c1e1', 'main', mockFeedback);
+  stateModule.setLLMFeedback(state, 'gfk-ch1', 'gfk-c1e1', 'main', mockFeedback);
   stateModule.saveState(state);
   
   const loaded = stateModule.loadState();
-  const retrieved = stateModule.getLLMFeedback(loaded, 'ch1', 'c1e1', 'main');
+  const retrieved = stateModule.getLLMFeedback(loaded, 'gfk-ch1', 'gfk-c1e1', 'main');
   
   return (
     retrieved !== undefined &&
@@ -136,8 +136,8 @@ export function testProgressStats(): boolean {
     data: [['a', 'b']],
   };
   
-  stateModule.setAnswer(state, 'ch1', 'c1e1', 'main', answer1);
-  stateModule.setAnswer(state, 'ch1', 'c1e2', 'main', answer2);
+  stateModule.setAnswer(state, 'gfk-ch1', 'gfk-c1e1', 'main', answer1);
+  stateModule.setAnswer(state, 'gfk-ch1', 'gfk-c1e2', 'main', answer2);
   stateModule.saveState(state);
   
   const stats = stateModule.getProgressStats(state);

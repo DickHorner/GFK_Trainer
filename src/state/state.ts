@@ -4,8 +4,6 @@
  * Uses localStorage as the backing store
  */
 
-import { ExerciseType } from '../gfkContent';
-
 /**
  * Answer for a textarea field
  */
