@@ -1,4 +1,4 @@
-import { GFK_CHAPTERS, Chapter, Exercise, ExerciseType } from '../gfkContent.js';
+import { COURSES, Course, Chapter, Exercise, ExerciseType } from '../content/index.js';
 import * as stateModule from '../state/state.js';
 import * as llmClient from '../llm/client.js';
 import * as settingsModule from '../settings/settings.js';
@@ -11,6 +11,8 @@ import * as settingsModule from '../settings/settings.js';
 export interface UIState {
   selectedChapterId: string | null;
   selectedExerciseId: string | null;
+  /** Currently active course (null = course selection screen) */
+  activeCourse: Course | null;
 }
 
 interface FieldElement {
@@ -23,6 +25,7 @@ interface FieldElement {
 let uiState: UIState = {
   selectedChapterId: null,
   selectedExerciseId: null,
+  activeCourse: null,
 };
 
 let userProgress: stateModule.UserProgress;
@@ -76,10 +79,8 @@ export function initializeUI(container: HTMLElement): void {
   // Add settings button to sidebar header
   renderSidebarHeader(sidebar, mainContent);
   
-  // Select first chapter by default
-  if (GFK_CHAPTERS.length > 0) {
-    selectChapter(GFK_CHAPTERS[0].id, mainContent);
-  }
+  // Show course selection on startup
+  renderCourseSelection(mainContent, sidebar);
 }
 
 /**
@@ -93,7 +94,7 @@ function renderSidebarHeader(sidebar: HTMLElement, mainContent: HTMLElement): vo
   header.style.marginBottom = '20px';
   
   const title = document.createElement('h2');
-  title.textContent = 'GFK-Trainer';
+  title.textContent = 'Kurs-Trainer';
   title.style.fontSize = '1.3rem';
   title.style.color = '#64b5f6';
   title.style.margin = '0';
@@ -142,12 +143,43 @@ function renderSidebarHeader(sidebar: HTMLElement, mainContent: HTMLElement): vo
  * Render the chapter list in the sidebar
  */
 function renderChapterList(container: HTMLElement, mainContent: HTMLElement): void {
-  // Remove existing chapter list if present
+  // Remove existing chapter list and back button if present
   const existingList = container.querySelector('ul');
-  if (existingList) {
-    existingList.remove();
-  }
-  
+  if (existingList) existingList.remove();
+  const existingBack = container.querySelector('.back-to-courses');
+  if (existingBack) existingBack.remove();
+  const existingHeading = container.querySelector('h3');
+  if (existingHeading) existingHeading.remove();
+
+  // No course active → sidebar shows nothing besides the header
+  if (!uiState.activeCourse) return;
+
+  const chapters = uiState.activeCourse.chapters;
+
+  // Back-to-courses button
+  const backBtn = document.createElement('button');
+  backBtn.textContent = '← Kurse';
+  backBtn.className = 'back-to-courses';
+  backBtn.style.width = '100%';
+  backBtn.style.padding = '8px';
+  backBtn.style.marginBottom = '12px';
+  backBtn.style.border = '1px solid #555';
+  backBtn.style.borderRadius = '4px';
+  backBtn.style.background = 'transparent';
+  backBtn.style.color = '#aaa';
+  backBtn.style.cursor = 'pointer';
+  backBtn.style.textAlign = 'left';
+  backBtn.style.fontSize = '0.85rem';
+  backBtn.setAttribute('aria-label', 'Zurück zur Kursauswahl');
+  backBtn.addEventListener('click', () => {
+    uiState.activeCourse = null;
+    uiState.selectedChapterId = null;
+    // Re-render chapter list with no active course: removes back button, heading, and chapter items
+    renderChapterList(container, mainContent);
+    renderCourseSelection(mainContent, container);
+  });
+  container.appendChild(backBtn);
+
   const heading = document.createElement('h3');
   heading.textContent = 'Kapitel';
   heading.style.fontSize = '1rem';
@@ -161,7 +193,7 @@ function renderChapterList(container: HTMLElement, mainContent: HTMLElement): vo
   list.style.padding = '0';
   list.style.margin = '0';
   
-  GFK_CHAPTERS.forEach(chapter => {
+  chapters.forEach(chapter => {
     const listItem = document.createElement('li');
     const button = document.createElement('button');
     
@@ -206,10 +238,91 @@ function renderChapterList(container: HTMLElement, mainContent: HTMLElement): vo
 }
 
 /**
- * Select a chapter and render its exercises
+ * Render the course selection screen in the main content area.
+ * Called on startup and when the user navigates back from a course.
  */
+function renderCourseSelection(mainContent: HTMLElement, sidebar: HTMLElement): void {
+  mainContent.innerHTML = '';
+
+  const heading = document.createElement('h1');
+  heading.textContent = 'Kursauswahl';
+  heading.style.color = '#64b5f6';
+  heading.style.marginBottom = '30px';
+  mainContent.appendChild(heading);
+
+  const grid = document.createElement('div');
+  grid.style.display = 'grid';
+  grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(280px, 1fr))';
+  grid.style.gap = '20px';
+
+  COURSES.forEach(course => {
+    const card = document.createElement('div');
+    card.style.border = '1px solid #444';
+    card.style.borderRadius = '8px';
+    card.style.padding = '20px';
+    card.style.background = '#2a2a2a';
+    card.style.cursor = 'pointer';
+    card.style.transition = 'all 0.2s ease';
+
+    card.addEventListener('mouseenter', () => {
+      card.style.borderColor = '#64b5f6';
+      card.style.background = '#333';
+    });
+    card.addEventListener('mouseleave', () => {
+      card.style.borderColor = '#444';
+      card.style.background = '#2a2a2a';
+    });
+
+    const title = document.createElement('h2');
+    title.textContent = course.title;
+    title.style.color = '#64b5f6';
+    title.style.fontSize = '1.2rem';
+    title.style.marginBottom = '10px';
+    card.appendChild(title);
+
+    if (course.description) {
+      const desc = document.createElement('p');
+      desc.textContent = course.description;
+      desc.style.color = '#bbb';
+      desc.style.fontSize = '0.9rem';
+      desc.style.lineHeight = '1.5';
+      desc.style.marginBottom = '15px';
+      card.appendChild(desc);
+    }
+
+    const meta = document.createElement('span');
+    meta.textContent = `${course.chapters.length} Kapitel`;
+    meta.style.color = '#888';
+    meta.style.fontSize = '0.8rem';
+    card.appendChild(meta);
+
+    card.addEventListener('click', () => {
+      selectCourse(course, mainContent, sidebar);
+    });
+
+    grid.appendChild(card);
+  });
+
+  mainContent.appendChild(grid);
+}
+
+/**
+ * Select a course: store it in uiState and render its chapter list in the sidebar.
+ */
+function selectCourse(course: Course, mainContent: HTMLElement, sidebar: HTMLElement): void {
+  uiState.activeCourse = course;
+  uiState.selectedChapterId = null;
+  renderChapterList(sidebar, mainContent);
+  // Show first chapter of the selected course
+  if (course.chapters.length > 0) {
+    selectChapter(course.chapters[0].id, mainContent);
+  }
+}
+
+
 function selectChapter(chapterId: string, mainContent: HTMLElement): void {
-  const chapter = GFK_CHAPTERS.find(ch => ch.id === chapterId);
+  if (!uiState.activeCourse) return;
+  const chapter = uiState.activeCourse.chapters.find(ch => ch.id === chapterId);
   if (!chapter) return;
   
   uiState.selectedChapterId = chapterId;
@@ -448,23 +561,25 @@ function renderTextareaField(exerciseId: string, container: HTMLElement, exercis
       stateModule.saveState(userProgress);
     });
     
-    // Add Deep-Check button for LLM feedback
-    const feedbackBtn = document.createElement('button');
-    feedbackBtn.textContent = '🔍 Deep-Check';
-    feedbackBtn.style.marginTop = '10px';
-    feedbackBtn.style.padding = '8px 15px';
-    feedbackBtn.style.background = '#444';
-    feedbackBtn.style.color = '#e0e0e0';
-    feedbackBtn.style.border = '1px solid #64b5f6';
-    feedbackBtn.style.borderRadius = '4px';
-    feedbackBtn.style.cursor = 'pointer';
-    feedbackBtn.style.fontSize = '0.9rem';
-    
-    feedbackBtn.addEventListener('click', () => {
-      showLLMFeedback(exercise, 'main', textarea.value);
-    });
-    
-    container.appendChild(feedbackBtn);
+    // Add Deep-Check button for LLM feedback (GFK-based courses only)
+    if (uiState.activeCourse?.isGfkBased) {
+      const feedbackBtn = document.createElement('button');
+      feedbackBtn.textContent = '🔍 Deep-Check';
+      feedbackBtn.style.marginTop = '10px';
+      feedbackBtn.style.padding = '8px 15px';
+      feedbackBtn.style.background = '#444';
+      feedbackBtn.style.color = '#e0e0e0';
+      feedbackBtn.style.border = '1px solid #64b5f6';
+      feedbackBtn.style.borderRadius = '4px';
+      feedbackBtn.style.cursor = 'pointer';
+      feedbackBtn.style.fontSize = '0.9rem';
+      
+      feedbackBtn.addEventListener('click', () => {
+        showLLMFeedback(exercise, 'main', textarea.value);
+      });
+      
+      container.appendChild(feedbackBtn);
+    }
   }
   
   container.appendChild(textarea);
@@ -550,28 +665,30 @@ function renderMatrixField(exercise: any, container: HTMLElement): void {
   
   container.appendChild(table);
   
-  // Add Deep-Check button for matrix
-  const feedbackBtn = document.createElement('button');
-  feedbackBtn.textContent = '🔍 Deep-Check';
-  feedbackBtn.style.marginTop = '10px';
-  feedbackBtn.style.padding = '8px 15px';
-  feedbackBtn.style.background = '#444';
-  feedbackBtn.style.color = '#e0e0e0';
-  feedbackBtn.style.border = '1px solid #64b5f6';
-  feedbackBtn.style.borderRadius = '4px';
-  feedbackBtn.style.cursor = 'pointer';
-  feedbackBtn.style.fontSize = '0.9rem';
-  
-  feedbackBtn.addEventListener('click', () => {
-    const matrixData: string[][] = [];
-    inputs.forEach((inputRow) => {
-      matrixData.push(inputRow.map((inp) => inp.value));
+  // Add Deep-Check button for matrix (GFK-based courses only)
+  if (uiState.activeCourse?.isGfkBased) {
+    const feedbackBtn = document.createElement('button');
+    feedbackBtn.textContent = '🔍 Deep-Check';
+    feedbackBtn.style.marginTop = '10px';
+    feedbackBtn.style.padding = '8px 15px';
+    feedbackBtn.style.background = '#444';
+    feedbackBtn.style.color = '#e0e0e0';
+    feedbackBtn.style.border = '1px solid #64b5f6';
+    feedbackBtn.style.borderRadius = '4px';
+    feedbackBtn.style.cursor = 'pointer';
+    feedbackBtn.style.fontSize = '0.9rem';
+    
+    feedbackBtn.addEventListener('click', () => {
+      const matrixData: string[][] = [];
+      inputs.forEach((inputRow) => {
+        matrixData.push(inputRow.map((inp) => inp.value));
+      });
+      const matrixContent = JSON.stringify(matrixData);
+      showLLMFeedback(exercise, 'main', matrixContent);
     });
-    const matrixContent = JSON.stringify(matrixData);
-    showLLMFeedback(exercise, 'main', matrixContent);
-  });
-  
-  container.appendChild(feedbackBtn);
+    
+    container.appendChild(feedbackBtn);
+  }
 }
 
 function renderTranslateField(exercise: any, container: HTMLElement): void {
@@ -647,28 +764,30 @@ function renderTranslateField(exercise: any, container: HTMLElement): void {
     container.appendChild(pairContainer);
   }
   
-  // Add Deep-Check button for translate
-  const feedbackBtn = document.createElement('button');
-  feedbackBtn.textContent = '🔍 Deep-Check';
-  feedbackBtn.style.marginTop = '10px';
-  feedbackBtn.style.padding = '8px 15px';
-  feedbackBtn.style.background = '#444';
-  feedbackBtn.style.color = '#e0e0e0';
-  feedbackBtn.style.border = '1px solid #64b5f6';
-  feedbackBtn.style.borderRadius = '4px';
-  feedbackBtn.style.cursor = 'pointer';
-  feedbackBtn.style.fontSize = '0.9rem';
-  
-  feedbackBtn.addEventListener('click', () => {
-    const pairs = inputPairs.map(p => ({
-      from: p.from.value,
-      to: p.to.value
-    }));
-    const translateContent = JSON.stringify(pairs);
-    showLLMFeedback(exercise, 'main', translateContent);
-  });
-  
-  container.appendChild(feedbackBtn);
+  // Add Deep-Check button for translate (GFK-based courses only)
+  if (uiState.activeCourse?.isGfkBased) {
+    const feedbackBtn = document.createElement('button');
+    feedbackBtn.textContent = '🔍 Deep-Check';
+    feedbackBtn.style.marginTop = '10px';
+    feedbackBtn.style.padding = '8px 15px';
+    feedbackBtn.style.background = '#444';
+    feedbackBtn.style.color = '#e0e0e0';
+    feedbackBtn.style.border = '1px solid #64b5f6';
+    feedbackBtn.style.borderRadius = '4px';
+    feedbackBtn.style.cursor = 'pointer';
+    feedbackBtn.style.fontSize = '0.9rem';
+    
+    feedbackBtn.addEventListener('click', () => {
+      const pairs = inputPairs.map(p => ({
+        from: p.from.value,
+        to: p.to.value
+      }));
+      const translateContent = JSON.stringify(pairs);
+      showLLMFeedback(exercise, 'main', translateContent);
+    });
+    
+    container.appendChild(feedbackBtn);
+  }
 }
 
 function renderChecklistField(exercise: any, container: HTMLElement): void {
@@ -732,25 +851,27 @@ function renderChecklistField(exercise: any, container: HTMLElement): void {
   
   container.appendChild(list);
   
-  // Add Deep-Check button for checklist
-  const feedbackBtn = document.createElement('button');
-  feedbackBtn.textContent = '🔍 Deep-Check';
-  feedbackBtn.style.marginTop = '10px';
-  feedbackBtn.style.padding = '8px 15px';
-  feedbackBtn.style.background = '#444';
-  feedbackBtn.style.color = '#e0e0e0';
-  feedbackBtn.style.border = '1px solid #64b5f6';
-  feedbackBtn.style.borderRadius = '4px';
-  feedbackBtn.style.cursor = 'pointer';
-  feedbackBtn.style.fontSize = '0.9rem';
-  
-  feedbackBtn.addEventListener('click', () => {
-    const checkedItems = exercise.items.filter((_: string, i: number) => checkboxes[i].checked);
-    const checklistContent = JSON.stringify(checkedItems);
-    showLLMFeedback(exercise, 'main', checklistContent);
-  });
-  
-  container.appendChild(feedbackBtn);
+  // Add Deep-Check button for checklist (GFK-based courses only)
+  if (uiState.activeCourse?.isGfkBased) {
+    const feedbackBtn = document.createElement('button');
+    feedbackBtn.textContent = '🔍 Deep-Check';
+    feedbackBtn.style.marginTop = '10px';
+    feedbackBtn.style.padding = '8px 15px';
+    feedbackBtn.style.background = '#444';
+    feedbackBtn.style.color = '#e0e0e0';
+    feedbackBtn.style.border = '1px solid #64b5f6';
+    feedbackBtn.style.borderRadius = '4px';
+    feedbackBtn.style.cursor = 'pointer';
+    feedbackBtn.style.fontSize = '0.9rem';
+    
+    feedbackBtn.addEventListener('click', () => {
+      const checkedItems = exercise.items.filter((_: string, i: number) => checkboxes[i].checked);
+      const checklistContent = JSON.stringify(checkedItems);
+      showLLMFeedback(exercise, 'main', checklistContent);
+    });
+    
+    container.appendChild(feedbackBtn);
+  }
 }
 
 function renderRatingField(exerciseId: string, container: HTMLElement, exercise?: Exercise): void {
